@@ -1,10 +1,12 @@
 ---
 
-- name: Stop Nginx
-  service: name=nginx state=stopped
+- name: Stopping Services
+  service: name="{{item}}" state=stopped
+  with_items: "{{ letsencrypt_pause_services }}"
 
 - name: Obtain or renew cert for domain
   shell: executable=/bin/bash cd /opt/certbot && ./certbot-auto certonly -m {{ letsencrypt_email }} --domains {{ letsencrypt_domain }} --agree-tos --renew-by-default --standalone --expand
 
-- name: Start Nginx
-  service: name=nginx state=started
+- name: Starting Services
+  service: name="{{item}}" state=started
+  with_items: "{{ letsencrypt_pause_services }}"

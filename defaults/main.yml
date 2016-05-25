@@ -3,3 +3,6 @@
 letsencrypt_email: yourmail@example.com
 # The domain we're requesting/renewing for
 letsencrypt_domain: example.com
+# Pause these services while updating the certificate
+letsencrypt_pause_services:
+  - apache2
