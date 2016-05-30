@@ -5,4 +5,4 @@ letsencrypt_email: yourmail@example.com
 letsencrypt_domain: example.com
 # Pause these services while updating the certificate
 letsencrypt_pause_services:
-  - apache2
+  - nginx

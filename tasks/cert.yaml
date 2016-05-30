@@ -5,7 +5,10 @@
   with_items: "{{ letsencrypt_pause_services }}"
 
 - name: Obtain or renew cert for domain
-  shell: executable=/bin/bash cd /opt/certbot && ./certbot-auto certonly -m {{ letsencrypt_email }} --domains {{ letsencrypt_domain }} --agree-tos --renew-by-default --standalone --expand
+  shell: "./certbot-auto certonly -m {{ letsencrypt_email }} --domains {{ letsencrypt_domain }} --agree-tos --renew-by-default --standalone --expand"
+  args:
+    chdir: /opt/certbot
+    executable: /bin/bash
 
 - name: Starting Services
   service: name="{{item}}" state=started
