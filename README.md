@@ -16,6 +16,7 @@ Functionality as follows:
 * One domain per role include only
 * Runs in `certonly` mode only
 
+
 PR's are welcome to include more functionality.
 
 #### More detail
@@ -55,12 +56,15 @@ Tested with the following:
 
 #### Optional
 
-* `letsencrypt_certbot_args` - Additional command line args to Certbot.
+* `letsencrypt_certbot_args` - Additional command line args to be passed to Certbot-- will be combined with `letsencrypt_certbot_default_args`. See [the Certbot docs](https://certbot.eff.org/docs/using.html) for arguments you may pass.
+* `letsencrypt_certbot_default_args` - Default command line args passed to certbot
 * `letsencrypt_certbot_verbose` - Make Certbot output to console (default `true`).
 * `letsencrypt_certbot_version` - Set specific Certbot version, for example a git tag or branch. Note that the lowest version of Certbot we support is 0.6.0.
 * `letsencrypt_force_renew` - Whether to attempt renewal always, default to `true`.
 * `letsencrypt_pause_services` - List of services to stop/start while calling Certbot.
 * `letsencrypt_request_www` - Request `www.` automatically (default `true`).
+
+To run using a plugin other than standalone, you can use the `letsencrypt_certbot_extra_args` list to do this.
 
 ### Example Playbook
 
