@@ -1,25 +1,154 @@
 ---
-- name: Operating system dependencies
-  apt: name={{ item }} state=present
+
+# dependencies
+
+- name: Dependencies are installed with Aptitude
+  apt: 
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ _letsencrypt_apt_packages }}"
+  when: _letsencrypt_apt_packages is defined
+
+- name: Dependencies are installed with RPM
+  apt: 
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ _letsencrypt_rpm_packages }}"
+  when: _letsencrypt_rpm_packages is defined
+
+
+# user and group configuration
+
+- name: letsencrypt_group exits
+  group:
+    name: "{{ letsencrypt_group }}"
+    system: yes
+    state: present
+
+- name: letsencrypt_user exists
+  user:
+    name: "{{ letsencrypt_user }}"
+    group: "{{ letsencrypt_group }}"
+    system: yes
+    home: "{{ letsencrypt_home_dir }}"
+    move_home: no
+    createhome: yes
+    append: yes
+
+- name: letsencrypt_home_dir is writable for letsencrypt_user
+  file:
+    path: "{{ letsencrypt_home_dir }}"
+    state: directory
+    mode: 0770
+
+
+# file system access
+
+- name: letsencrypt user is able to write to output directories
+  file:
+    path: "{{ item }}"
+    recurse: yes
+    owner: "{{ letsencrypt_user }}"
   with_items:
-    - build-essential
-    - libssl-dev
-    - libffi-dev
-    - python-dev
-    - git
-    - python-pip
-    - python-virtualenv
-    - dialog
-    - libaugeas0
-    - ca-certificates
-- name: Python cryptography module
-  pip: name=cryptography
-- name: Letsencrypt Python client
+    - /var/lib/letsencrypt
+    - /var/log/letsencrypt
+    - /etc/letsencrypt
+
+- name: letsencrypt account directory exists and is writable
+  file:
+    path: "{{ letsencrypt_account_file | dirname }}"
+    owner: root
+    group: "{{ letsencrypt_group }}"
+    mode: 0770
+    state: directory
+
+- name: letsencrypt_webroot_path exists and is writable by letsencrypt_user
+  file:
+    path: "{{ letsencrypt_webroot_path }}"
+    state: directory
+    owner: "{{ letsencrypt_user }}"
+    group: "{{ letsencrypt_group }}"
+    mode: 0775
+    recurse: yes
+
+
+# python webserver systemd wrapper
+
+- name: webserver systemd service is installed
+  template:
+    src: "systemd/letsencrypt-simplehttpd.service.j2"
+    dest: "/etc/systemd/system/letsencrypt-simplehttpd.service"
+    owner: root
+    group: root
+    mode: 0755
+  register: _systemd_service_template
+
+# Ansible < 2.2 and >= 2.2
+- name: systemd daemons are reloaded via systemctl command
+  command: systemctl daemon-reload
+  when: _systemd_service_template.changed
+
+# # Ansible >= 2.2 only
+# - name: systemd daemons are reloaded after changing the service
+#   systemd:
+#     name: letsencrypt-simplehttpd
+#     daemon_reload: yes
+#     enabled: false
+#   when: _systemd_service_template.changed
+
+- name: export directory exists
+  file:
+    path: "{{ letsencrypt_export_dir }}"
+    state: directory
+    owner: "{{ letsencrypt_user }}"
+    group: "root"
+    mode: 0775
+    recurse: yes
+    force: yes
+
+
+# virtualenv and python dependencies
+
+- name: virtualenv environment exists
+  command: virtualenv --no-site-packages "{{ letsencrypt_virtualenv_dir }}"
+  args:
+    creates: "{{ letsencrypt_virtualenv_dir }}"
+  become: yes
+  become_user: "{{ letsencrypt_user }}"
+
+- name: Python modules are installed to virtualenv
+  pip:
+    name: "{{ item }}"
+    virtualenv: "{{ letsencrypt_virtualenv_dir }}"
+    virtualenv_site_packages: no
+  with_items:
+    - 'cryptography'
+    - 'pyOpenSSL'
+    - 'pytz'
+    - 'requests'
+  become: yes
+  become_user: "{{ letsencrypt_user }}"
+
+- name: ACME Python module 0.6 is installed
+  pip:
+    name: "acme"
+    version: "0.6"
+    virtualenv: "{{ letsencrypt_virtualenv_dir }}"
+    virtualenv_site_packages: no
+  become: yes
+  become_user: "{{ letsencrypt_user }}"
+
+
+# simp_le client
+
+- name: simp_le client is installed
   git:
-    dest: /opt/certbot
+    repo: "https://github.com/kuba/simp_le.git"
+    dest: "{{ letsencrypt_home_dir }}/simp_le"
+    depth: 1
     clone: yes
     update: yes
-    depth: 1
-    repo: https://github.com/certbot/certbot
     force: yes
-    version: '{{letsencrypt_certbot_version}}'
+  become: yes
+  become_user: "{{ letsencrypt_user }}"
+

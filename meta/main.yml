@@ -8,12 +8,24 @@ galaxy_info:
   - name: Ubuntu
     versions:
     - trusty
+    - utopic
+    - vivid
+    - wily
+    - xenial
   - name: Debian
     versions:
     - jessie
+    - wheezy
+  - name: CentOS
+    versions:
+      - 7.2
   categories:
-  - cloud
-  - web
+    - cloud
+    - web
   galaxy_tags:
     - letsencrypt
+    - encryption
+    - crypto
+    - ssl
+    - tls
 dependencies: []

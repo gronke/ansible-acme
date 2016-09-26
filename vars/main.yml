@@ -1,5 +1,10 @@
 ---
 # vars file for letsencrypt
 
-certbot_skip_renewal_message: "Certificate not yet due for renewal; no action taken"
-certbot_success_message: "Congratulations!"
+certbot_skip_renewal_message: "Certificates already exist and renewal is not necessary"
+certbot_success_message: "Saving fullchain.pem"
+
+_letsencrypt_supported_distributions:
+  - Debian
+  - Ubuntu
+  - CentOS

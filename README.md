@@ -9,20 +9,18 @@ Stability: beta.
 
 ### What does it do?
 
-This role will pull in the official [Certbot client](https://github.com/certbot/certbot), install it and issue or renew a certificate with your chosen domain.
+This role will pull in the [simp_le](https://github.com/kuba/simp_le) that is recommended from LetsEncrypt for automation. After setting up the client the role will try to obtain a certificate for the provided domain.
 
 Functionality as follows:
-* Tested on Ubuntu 14.04 and Debian 8
 * One domain per role include only
-* Runs in `certonly` mode only
-
+* Runs the client as unprivileged user
+* Certificates are only renewed when they expire within a definable threshold
 
 PR's are welcome to include more functionality.
 
 #### More detail
 
-* The client will be installed in `/opt/certbot` as root
-* Each run will pull in the Certbot client code from a proven release version. You can set a specific Certbot version using the variable `letsencrypt_certbot_version`.
+* The client will be installed in `/opt/letsencrypt` as root
 * A list of services to be stopped before and (re-)started after obtaining a new certificate can be configured using the variable `letsencrypt_pause_services`.
 * `certonly` mode is used, which means no automatic web server installation
 * After cert issuing, you can find it in `/etc/letsencrypt/live/<domainname>`
@@ -34,14 +32,13 @@ PR's are welcome to include more functionality.
        SSLCertificateChainFile /etc/letsencrypt/live/{{ hostname }}/chain.pem
        ```
 
-* Note! If this role fails in the cert request part, you might have stopped services - take care!
 * If the cert has been requested before, this role will automatically try to renew it, if possible. Disable this functionality by setting `letsencrypt_force_renew` to `false`. No renewal will be attempted in this case if cert is not due for renewal.
 * A `www.` subdomain will automatically be requested along with the certificate.
     * To disable this behaviour, set `letsencrypt_request_www` to `false` in your vars.
 
 ### Requirements
 
-Tested with the following:
+Tested with
 
 * Ubuntu 14.04 and Debian 8
 * Apache2 and Nginx
@@ -53,31 +50,38 @@ Tested with the following:
 
 * `letsencrypt_domain` - Domain the certificate is for.
 * `letsencrypt_email` - Your email as certificate owner.
+* `letsencrypt_tos_sha256` - Provide the SHA256 hash of the latest Terms-of-Service you agreed to
 
 #### Optional
 
-* `letsencrypt_certbot_args` - Additional command line args to be passed to Certbot-- will be combined with `letsencrypt_certbot_default_args`. See [the Certbot docs](https://certbot.eff.org/docs/using.html) for arguments you may pass.
-* `letsencrypt_certbot_default_args` - Default command line args passed to certbot
-* `letsencrypt_certbot_verbose` - Make Certbot output to console (default `true`).
-* `letsencrypt_certbot_version` - Set specific Certbot version, for example a git tag or branch. Note that the lowest version of Certbot we support is 0.6.0.
+* `letsencrypt_args` - Additional command line args to simp_le LetsEncrypt client.
 * `letsencrypt_force_renew` - Whether to attempt renewal always, default to `true`.
 * `letsencrypt_pause_services` - List of services to stop/start while calling Certbot.
 * `letsencrypt_request_www` - Request `www.` automatically (default `true`).
 
-To run using a plugin other than standalone, you can use the `letsencrypt_certbot_extra_args` list to do this.
+### Terms of Service
+
+On the [Let's Encrypt: Policy and Legal Repository](https://letsencrypt.org/repository/) page the latest "Terms of Service" PDF document can be downloaded. Make sure you agree to this document before you calculate the checksum and provide it as role input variable.
+
+```bash
+export TOS_DOCUMENT=LE-SA-v1.1.1-August-1-2016.pdf
+wget https://letsencrypt.org/documents/$TOS_DOCUMENT
+shasum -a 256 $TOS_DOCUMENT
+```
+
+At writing time the latest tos_sha256 is `6373439b9f29d67a5cd4d18cbc7f264809342dbf21cb2ba2fc7588df987a6221`
 
 ### Example Playbook
 
 This role works best when included just before your main site role, for example. Or it can be used in an individual playbook, for example as below.
 
-This role should become root on the target host.
+If not manually specified the role will create system user and group "letsencrypt" that executes the client
 
     ---
     - hosts: myhost
-      become: yes
-      become_user: root
       roles:
         - role: ansible-letsencrypt
+          letsencrypt_user: "le-client-user"
           letsencrypt_email: email@example.com
           letsencrypt_domain: example.com
           letsencrypt_pause_services:

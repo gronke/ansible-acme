@@ -1,0 +1,11 @@
+---
+
+_letsencrypt_apt_packages:
+  - gcc
+  - libssl-dev
+  - libffi-dev
+  - python
+  - python-dev
+  - python-pip
+  - virtualenv
+  - ca-certificates
