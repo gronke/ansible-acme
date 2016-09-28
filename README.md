@@ -81,7 +81,7 @@ If not manually specified the role will create system user and group "letsencryp
     - hosts: myhost
       roles:
         - role: ansible-letsencrypt
-          letsencrypt_user: "le-client-user"
+          letsencrypt_user: "letsencrypt"
           letsencrypt_email: email@example.com
           letsencrypt_domain: example.com
           letsencrypt_pause_services:

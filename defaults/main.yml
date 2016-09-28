@@ -4,7 +4,7 @@ letsencrypt_email: yourmail@example.com
 # The domain we're requesting/renewing for
 letsencrypt_domain: example.com
 # LetsEncrypt Terms of Service SHA256
-letsencrypt_tos_sha256: "6373439b9f29d67a5cd4d18cbc7f264809342dbf21cb2ba2fc7588df987a6221"
+#letsencrypt_tos_sha256: "6373439b9f29d67a5cd4d18cbc7f264809342dbf21cb2ba2fc7588df987a6221"
 # staging mode to create a fake certificate
 letsencrypt_staging: false
 # Always request www. also?
@@ -31,10 +31,9 @@ letsencrypt_virtualenv_dir: "{{ letsencrypt_home_dir }}/simp_le/venv"
 letsencrypt_account_file: "{{ '/etc/letsencrypt/accounts/simp_le-' + ('staging' if letsencrypt_staging else 'production') + '.json' }}"
 # ACME challenge server
 letsencrypt_challenge_url: "https://{{ 'acme-staging' if letsencrypt_staging else 'acme-v01' }}.api.letsencrypt.org/directory"
-# certbot custom arguments -- see: https://github.com/kuba/simp_le
+# simp_le custom arguments -- see: https://github.com/kuba/simp_le
 letsencrypt_args: []
-letsencrypt_combined_args: []
-# default arguments passed to certbot
+# default arguments passed to simp_le
 letsencrypt_default_args:
   - --email "{{ letsencrypt_email }}"
   - -f account_key.json
@@ -42,7 +41,6 @@ letsencrypt_default_args:
   - -f key.pem
   - -f cert.pem
   - -f chain.pem
-  #- "-d {{ _letsencrypt_domains | join(' -d ') }}"
   - --default_root "{{ letsencrypt_webroot_path }}"
   - --server "{{ letsencrypt_challenge_url }}"
   - --tos_sha256 "{{ letsencrypt_tos_sha256 }}"

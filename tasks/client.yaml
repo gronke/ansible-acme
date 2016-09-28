@@ -5,21 +5,21 @@
 - name: Dependencies are installed with Aptitude
   apt: 
     name: "{{ item }}"
-    state: present
+    state: latest
   with_items: "{{ _letsencrypt_apt_packages }}"
   when: _letsencrypt_apt_packages is defined
 
-- name: Dependencies are installed with RPM
-  apt: 
+- name: Dependencies are installed with Yum
+  yum: 
     name: "{{ item }}"
-    state: present
+    state: latest
   with_items: "{{ _letsencrypt_rpm_packages }}"
   when: _letsencrypt_rpm_packages is defined
 
 
 # user and group configuration
 
-- name: letsencrypt_group exits
+- name: letsencrypt_group exists
   group:
     name: "{{ letsencrypt_group }}"
     system: yes
@@ -122,13 +122,6 @@
 
 
 # virtualenv and python dependencies
-
-- name: virtualenv environment exists
-  command: virtualenv --no-site-packages "{{ letsencrypt_virtualenv_dir }}"
-  args:
-    creates: "{{ letsencrypt_virtualenv_dir }}"
-  become: yes
-  become_user: "{{ letsencrypt_user }}"
 
 - name: Python modules are installed to virtualenv
   pip:
