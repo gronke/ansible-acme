@@ -4,7 +4,7 @@ letsencrypt_email: yourmail@example.com
 # The domain we're requesting/renewing for
 letsencrypt_domain: example.com
 # LetsEncrypt Terms of Service SHA256
-#letsencrypt_tos_sha256: "6373439b9f29d67a5cd4d18cbc7f264809342dbf21cb2ba2fc7588df987a6221"
+letsencrypt_tos_sha256: "6373439b9f29d67a5cd4d18cbc7f264809342dbf21cb2ba2fc7588df987a6221"
 # staging mode to create a fake certificate
 letsencrypt_staging: false
 # Always request www. also?
@@ -46,4 +46,4 @@ letsencrypt_default_args:
   - --default_root "{{ letsencrypt_webroot_path }}"
   - --server "{{ letsencrypt_challenge_url }}"
   - --tos_sha256 "{{ letsencrypt_tos_sha256 }}"
-  - --valid_min {{ letsencrypt_expiration_threshold }}
+  - --valid_min {{ letsencrypt_expiration_threshold | int }}

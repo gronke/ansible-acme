@@ -1,10 +1,10 @@
 ---
 
-- set_fact: letsencrypt_domains="{{ [letsencrypt_domain] }}"
+- set_fact: _letsencrypt_domains="{{ [letsencrypt_domain] }}"
 - set_fact: _letsencrypt_domains="{{ _letsencrypt_domains + [{{ 'www.' + letsencrypt_domain }}] }}"
   when: letsencrypt_request_www
 
-- set_fact: _letsencrypt_combined_args="{{ letsencrypt_default_args + ['-d ' + (_letsencrypt_domains | join(' -d '))] + _letsencrypt_args }}"
+- set_fact: _letsencrypt_combined_args="{{ letsencrypt_default_args + ['-d ' + (_letsencrypt_domains | join(' -d '))] + letsencrypt_args }}"
 
 - name: Stopping Services
   service: name="{{item}}" state=stopped
@@ -17,19 +17,27 @@
     name: letsencrypt-simplehttpd
     state: started
 
-- name: fullchain.pem is linked
+- name: fullchain.pem, cert.pem and chain.pem are linked
   file:
-    src: "{{ letsencrypt_export_dir }}/{{ item[0] }}"
-    dest: "{{ letsencrypt_home_dir }}/simp_le/{{ item[1] }}"
+    src: "{{ letsencrypt_export_dir }}/{{ item }}"
+    dest: "{{ letsencrypt_home_dir }}/simp_le/{{ item }}"
     state: link
     owner: "{{ letsencrypt_user }}"
     group: "{{ letsencrypt_group }}"
     force: yes
   with_items:
-    - [ "fullchain.pem", "fullchain.pem" ]
-    - [ "privkey.pem", "key.pem" ]
-    - [ "cert.pem", "cert.pem" ]
-    - [ "chain.pem", "chain.pem" ]
+    - "fullchain.pem"
+    - "cert.pem"
+    - "chain.pem"
+
+- name: privkey.pem is linked
+  file:
+    src: "{{ letsencrypt_export_dir }}/privkey.pem"
+    dest: "{{ letsencrypt_home_dir }}/simp_le/key.pem"
+    state: link
+    owner: "{{ letsencrypt_user }}"
+    group: "{{ letsencrypt_group }}"
+    force: yes
 
 - name: LetsEncrypt account key is linked
   file:

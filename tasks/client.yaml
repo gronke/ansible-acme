@@ -107,6 +107,20 @@
     force: yes
 
 
+# simp_le client
+
+- name: simp_le client is installed
+  git:
+    repo: "https://github.com/kuba/simp_le.git"
+    dest: "{{ letsencrypt_home_dir }}/simp_le"
+    depth: 1
+    clone: yes
+    update: yes
+    force: yes
+  become: yes
+  become_user: "{{ letsencrypt_user }}"
+
+
 # virtualenv and python dependencies
 
 - name: virtualenv environment exists
@@ -135,20 +149,6 @@
     version: "0.6"
     virtualenv: "{{ letsencrypt_virtualenv_dir }}"
     virtualenv_site_packages: no
-  become: yes
-  become_user: "{{ letsencrypt_user }}"
-
-
-# simp_le client
-
-- name: simp_le client is installed
-  git:
-    repo: "https://github.com/kuba/simp_le.git"
-    dest: "{{ letsencrypt_home_dir }}/simp_le"
-    depth: 1
-    clone: yes
-    update: yes
-    force: yes
   become: yes
   become_user: "{{ letsencrypt_user }}"
 
