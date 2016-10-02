@@ -47,6 +47,7 @@
 - name: letsencrypt user is able to write to output directories
   file:
     path: "{{ item }}"
+    state: directory
     recurse: yes
     owner: "{{ letsencrypt_user }}"
   with_items:
