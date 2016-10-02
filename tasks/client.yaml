@@ -73,9 +73,6 @@
     mode: 0775
     recurse: yes
 
-
-# python webserver systemd wrapper
-
 - name: webserver systemd service is installed
   template:
     src: "systemd/letsencrypt-simplehttpd.service.j2"
@@ -84,11 +81,12 @@
     group: root
     mode: 0755
   register: _systemd_service_template
+  when: ansible_service_mgr == "systemd"
 
 # Ansible < 2.2 and >= 2.2
 - name: systemd daemons are reloaded via systemctl command
   command: systemctl daemon-reload
-  when: _systemd_service_template.changed
+  when: (ansible_service_mgr == "systemd") and _systemd_service_template.changed
 
 # # Ansible >= 2.2 only
 # - name: systemd daemons are reloaded after changing the service
@@ -97,6 +95,20 @@
 #     daemon_reload: yes
 #     enabled: false
 #   when: _systemd_service_template.changed
+
+- name: webserver upstart job is installed
+  template:
+    src: "upstart/letsencrypt-simplehttpd.conf.j2"
+    dest: "/etc/init/letsencrypt-simplehttpd.conf"
+    owner: root
+    group: root
+    mode: 0655
+  register: _upstart_service_template
+  when: ansible_service_mgr == "upstart"
+
+- name: upstart configuration is reloaded after job was changed
+  command: initctl reload-configuration
+  when: (ansible_service_mgr == "upstart") and _upstart_service_template.changed
 
 - name: export directory exists
   file:

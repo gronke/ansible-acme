@@ -1,0 +1,9 @@
+#!upstart
+description "Python SimpleHTTPServer for LetsEncrypt ACME challenge"
+
+start on filesystem and started networking
+stop on shutdown
+
+chdir "{{ letsencrypt_webroot_path }}"
+
+exec start-stop-daemon --start --make-pidfile --pidfile /var/run/letsencrypt-webserver.pid --exec /usr/bin/python2.7 -- -m SimpleHTTPServer 80
