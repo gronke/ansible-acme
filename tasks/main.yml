@@ -3,11 +3,5 @@
 - fail: msg="Certbot was replaced by simple_le client. Please update your flags provided as `letsencrypt_certbot_args` to `letsencrypt_args`"
   when: letsencrypt_certbot_args is defined
 
-- fail: msg="Your distribution '{{ ansible_distribution }}' is not yet supported by this role"
-  when: ansible_distribution not in _letsencrypt_supported_distributions
-
-- name: load os specific configuration
-  include_vars: "{{ 'packages.' + ansible_distribution + '.yml' }}"
-
 - include: client.yaml
 - include: cert.yaml

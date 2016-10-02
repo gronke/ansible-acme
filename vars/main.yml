@@ -3,8 +3,3 @@
 
 certbot_skip_renewal_message: "Certificates already exist and renewal is not necessary"
 certbot_success_message: "Saving fullchain.pem"
-
-_letsencrypt_supported_distributions:
-  - Debian
-  - Ubuntu
-  - CentOS

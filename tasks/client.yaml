@@ -2,19 +2,55 @@
 
 # dependencies
 
+- name: universe apt source is available on older versions of Ubuntu
+  command: apt-add-repository universe
+  when: (ansible_distribution == "Ubuntu") and ((ansible_distribution_major_version | int) <= 14)
+  register: _universe_sources_added
+  changed_when: not ("already enabled" in _universe_sources_added.stdout_lines[0])
+
+- name: apt-caches are updated after enabling universe
+  apt:
+    update_cache: yes
+  when: _universe_sources_added.changed
+
+- name: identify virtualenv apt package name
+  command: apt-cache search python-virtualenv
+  register: _apt_cache_search_virtualenv
+  when: ansible_pkg_mgr == "apt"
+
+- set_fact: _virtualenv_apt_package="{{ 'virtualenv' if (_apt_cache_search_virtualenv.stdout == '') else 'python-virtualenv' }}"
+  when: ansible_pkg_mgr == "apt"
+
 - name: Dependencies are installed with Aptitude
   apt: 
     name: "{{ item }}"
     state: latest
-  with_items: "{{ _letsencrypt_apt_packages }}"
-  when: _letsencrypt_apt_packages is defined
+  with_items:
+      - gcc
+      - libssl-dev
+      - libffi-dev
+      - python
+      - python-dev
+      - python-pip
+      - ca-certificates
+      - git
+      - "{{ _virtualenv_apt_package }}"
+  when: ansible_pkg_mgr == "apt"
 
 - name: Dependencies are installed with Yum
   yum: 
     name: "{{ item }}"
     state: latest
-  with_items: "{{ _letsencrypt_rpm_packages }}"
-  when: _letsencrypt_rpm_packages is defined
+  with_items:
+    - ca-certificates
+    - gcc
+    - libffi-devel
+    - openssl-devel
+    - python
+    - python-devel
+    - python-virtualenv
+    - git
+  when: ansible_pkg_mgr == "yum"
 
 
 # user and group configuration
