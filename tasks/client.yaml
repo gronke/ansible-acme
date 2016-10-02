@@ -53,7 +53,8 @@
   with_items:
     - /var/lib/letsencrypt
     - /var/log/letsencrypt
-    - /etc/letsencrypt
+    - /etc/letsencrypt/live
+    - /etc/letsencrypt/accounts
 
 - name: letsencrypt account directory exists and is writable
   file:
