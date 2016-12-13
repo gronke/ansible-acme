@@ -1,0 +1,13 @@
+[Unit]
+Description=Python SimpleHTTPServer for ACME challenge
+Documentation=man:SimpleHTTPServer(1)
+
+[Service]
+Type=forking
+PIDFile=/var/run/acme-webserver.pid
+WorkingDirectory={{ acme_webroot_path }}
+ExecStart=/bin/sh -c "/usr/bin/python -m SimpleHTTPServer 80 & /bin/echo $! > /var/run/acme-webserver.pid"
+ExecStop=/bin/kill $MAINPID
+
+[Install]
+WantedBy=multi-user.target

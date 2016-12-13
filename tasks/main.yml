@@ -1,7 +1,7 @@
 ---
 
-- fail: msg="Certbot was replaced by simple_le client. Please update your flags provided as `letsencrypt_certbot_args` to `letsencrypt_args`"
-  when: letsencrypt_certbot_args is defined
+- fail: msg="Certbot was replaced by simple_le client. Please update your flags provided as `acme_certbot_args` to `acme_args`"
+  when: acme_certbot_args is defined
 
 - include: client.yaml
 - include: cert.yaml

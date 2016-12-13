@@ -24,6 +24,8 @@ galaxy_info:
     - web
   galaxy_tags:
     - letsencrypt
+    - acme
+    - certificates
     - encryption
     - crypto
     - ssl

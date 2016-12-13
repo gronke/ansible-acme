@@ -1,29 +1,29 @@
 ---
 
-- set_fact: _letsencrypt_domains="{{ [letsencrypt_domain] }}"
-- set_fact: _letsencrypt_domains="{{ _letsencrypt_domains + [{{ 'www.' + letsencrypt_domain }}] }}"
-  when: letsencrypt_request_www
+- set_fact: _acme_domains="{{ [acme_domain] }}"
+- set_fact: _acme_domains="{{ _acme_domains + [{{ 'www.' + acme_domain }}] }}"
+  when: acme_request_www
 
-- set_fact: _letsencrypt_combined_args="{{ letsencrypt_default_args + ['-d ' + (_letsencrypt_domains | join(' -d '))] + letsencrypt_args }}"
+- set_fact: _acme_combined_args="{{ acme_default_args + ['-d ' + (_acme_domains | join(' -d '))] + acme_args }}"
 
 - name: Stopping Services
   service: name="{{item}}" state=stopped
-  with_items: "{{ letsencrypt_pause_services }}"
+  with_items: "{{ acme_pause_services }}"
   ignore_errors: yes
   register: _services_stopped
 
 - name: Start SimpleHTTPServer for ACME Challenges
   service:
-    name: letsencrypt-simplehttpd
+    name: acme-simplehttpd
     state: started
 
 - name: fullchain.pem, cert.pem and chain.pem are linked
   file:
-    src: "{{ letsencrypt_export_dir }}/{{ item }}"
-    dest: "{{ letsencrypt_home_dir }}/simp_le/{{ item }}"
+    src: "{{ acme_export_dir }}/{{ item }}"
+    dest: "{{ acme_home_dir }}/simp_le/{{ item }}"
     state: link
-    owner: "{{ letsencrypt_user }}"
-    group: "{{ letsencrypt_group }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
     force: yes
   with_items:
     - "fullchain.pem"
@@ -32,40 +32,40 @@
 
 - name: privkey.pem is linked
   file:
-    src: "{{ letsencrypt_export_dir }}/privkey.pem"
-    dest: "{{ letsencrypt_home_dir }}/simp_le/key.pem"
+    src: "{{ acme_export_dir }}/privkey.pem"
+    dest: "{{ acme_home_dir }}/simp_le/key.pem"
     state: link
-    owner: "{{ letsencrypt_user }}"
-    group: "{{ letsencrypt_group }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
     force: yes
 
 - name: LetsEncrypt account key is linked
   file:
-    src: "{{ letsencrypt_account_file }}"
-    dest: "{{ letsencrypt_home_dir }}/simp_le/account_key.json"
+    src: "{{ acme_account_file }}"
+    dest: "{{ acme_home_dir }}/simp_le/account_key.json"
     state: link
-    owner: "{{ letsencrypt_user }}"
-    group: "{{ letsencrypt_group }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
     force: yes
 
 - name: Obtain or renew cert for domain
-  shell: PATH="{{ letsencrypt_virtualenv_dir }}/bin" "{{ letsencrypt_virtualenv_dir }}/bin/python" ./simp_le.py {{_letsencrypt_combined_args | join(' ')}} 2>&1
+  shell: PATH="{{ acme_virtualenv_dir }}/bin" "{{ acme_virtualenv_dir }}/bin/python" ./simp_le.py {{_acme_combined_args | join(' ')}} 2>&1
   args:
-    chdir: "{{ letsencrypt_home_dir }}/simp_le"
+    chdir: "{{ acme_home_dir }}/simp_le"
     executable: /bin/bash
   become: yes
-  become_user: "{{ letsencrypt_user }}"
+  become_user: "{{ acme_user }}"
   ignore_errors: true
   register: _certbot_command
 
 - set_fact: _signing_successful='{{ certbot_success_message in _certbot_command.stdout }}'
-- set_fact: _signing_skipped='{{ (certbot_skip_renewal_message in _certbot_command.stdout) and not letsencrypt_force_renew }}'
+- set_fact: _signing_skipped='{{ (certbot_skip_renewal_message in _certbot_command.stdout) and not acme_force_renew }}'
 - debug: msg="{{ (_certbot_command.stdout_lines if _certbot_command.stdout_lines is defined else _certbot_command.stderr_lines) | pprint }}"
-  when: letsencrypt_verbose or not (_signing_successful and _signing_skipped)
+  when: acme_verbose or not (_signing_successful and _signing_skipped)
 
 - name: Stop SimpleHTTPServer after running certbot
   service:
-    name: letsencrypt-simplehttpd
+    name: acme-simplehttpd
     state: stopped
 
 - name: Starting paused Services

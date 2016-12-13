@@ -1,10 +1,10 @@
 ## [unreleased]
 
 ### Backwards incompatible changes
-* Apache2 is no longer a dependency of this role and will not be installed. Thanks to @gronke for this patch. This also means `letsencrypt_pause_services` is an empty list by default. Make sure to add your webserver there so that it will be paused. A missing not installed service will not stop the role from executing so you can safely run this role before your main application role.
+* Apache2 is no longer a dependency of this role and will not be installed. Thanks to @gronke for this patch. This also means `acme_pause_services` is an empty list by default. Make sure to add your webserver there so that it will be paused. A missing not installed service will not stop the role from executing so you can safely run this role before your main application role.
 
 ### Fixed
-* Settings `letsencrypt_force_renew` to `false` caused Certbot to fail in some situations. Now this is fixed by passing Certbot the flag `--keep-until-expiring`, in the case that forced renewal is not desired. If the certificate is not due for renewal, nothing will be done by Certbot but no error will be raised either.
+* Settings `acme_force_renew` to `false` caused Certbot to fail in some situations. Now this is fixed by passing Certbot the flag `--keep-until-expiring`, in the case that forced renewal is not desired. If the certificate is not due for renewal, nothing will be done by Certbot but no error will be raised either.
 
 ### Changed
 * Certbot now runs with the `--non-interactive` flag, which should protect from Ansible hanging on unexpected prompts. **Note! This flag was added in Certbot 0.6.0** which is the lowest version this role can thus support.
@@ -13,15 +13,15 @@
 ## [0.4.1] - 2016-09-04
 
 ### Fixed
-* There was an error setting `letsencrypt_certbot_args` in 0.4.0. Thanks @gronke for a fast fix.
+* There was an error setting `acme_certbot_args` in 0.4.0. Thanks @gronke for a fast fix.
 
 ## [0.4.0] - 2016-09-03
 
 ### Added
-* Allow configuring the certbot version with a new variable `letsencrypt_certbot_version`. This defaults to master. Thanks @gronke for this patch!
-* Allow configuring what services are stopped when requesting a cert via new variable `letsencrypt_pause_services`. This is a list of items which by default includes `apache2`. You can set this variable empty to skip pausing services. Thanks @gronke for this patch!
-* Allow configuring the `--renew-by-default` command line flag to Certbot. By default this is enabled, switch it off by setting `letsencrypt_force_renew` to `false`. Thanks @gronke.
-* Additional Certbot command line args can now be passed in using the list variable `letsencrypt_certbot_args`. Thanks @gronke for the addition.
+* Allow configuring the certbot version with a new variable `acme_certbot_version`. This defaults to master. Thanks @gronke for this patch!
+* Allow configuring what services are stopped when requesting a cert via new variable `acme_pause_services`. This is a list of items which by default includes `apache2`. You can set this variable empty to skip pausing services. Thanks @gronke for this patch!
+* Allow configuring the `--renew-by-default` command line flag to Certbot. By default this is enabled, switch it off by setting `acme_force_renew` to `false`. Thanks @gronke.
+* Additional Certbot command line args can now be passed in using the list variable `acme_certbot_args`. Thanks @gronke for the addition.
 
 ### Changed
 * Stability changed to "beta" to be less scary :)
@@ -30,7 +30,7 @@
 
 ### Added
 
-* Allow specifying `letsencrypt_request_www` to disable requesting `www.` cert automatically. By default it is requested.
+* Allow specifying `acme_request_www` to disable requesting `www.` cert automatically. By default it is requested.
 
 ## [0.2.0] - 2016-05-14
 

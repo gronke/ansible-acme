@@ -55,25 +55,25 @@
 
 # user and group configuration
 
-- name: letsencrypt_group exists
+- name: acme_group exists
   group:
-    name: "{{ letsencrypt_group }}"
+    name: "{{ acme_group }}"
     system: yes
     state: present
 
-- name: letsencrypt_user exists
+- name: acme_user exists
   user:
-    name: "{{ letsencrypt_user }}"
-    group: "{{ letsencrypt_group }}"
+    name: "{{ acme_user }}"
+    group: "{{ acme_group }}"
     system: yes
-    home: "{{ letsencrypt_home_dir }}"
+    home: "{{ acme_home_dir }}"
     move_home: no
     createhome: yes
     append: yes
 
-- name: letsencrypt_home_dir is writable for letsencrypt_user
+- name: acme_home_dir is writable for acme_user
   file:
-    path: "{{ letsencrypt_home_dir }}"
+    path: "{{ acme_home_dir }}"
     state: directory
     mode: 0770
 
@@ -85,7 +85,7 @@
     path: "{{ item }}"
     state: directory
     recurse: yes
-    owner: "{{ letsencrypt_user }}"
+    owner: "{{ acme_user }}"
   with_items:
     - /var/lib/letsencrypt
     - /var/log/letsencrypt
@@ -94,25 +94,25 @@
 
 - name: letsencrypt account directory exists and is writable
   file:
-    path: "{{ letsencrypt_account_file | dirname }}"
+    path: "{{ acme_account_file | dirname }}"
     owner: root
-    group: "{{ letsencrypt_group }}"
+    group: "{{ acme_group }}"
     mode: 0770
     state: directory
 
-- name: letsencrypt_webroot_path exists and is writable by letsencrypt_user
+- name: acme_webroot_path exists and is writable by acme_user
   file:
-    path: "{{ letsencrypt_webroot_path }}"
+    path: "{{ acme_webroot_path }}"
     state: directory
-    owner: "{{ letsencrypt_user }}"
-    group: "{{ letsencrypt_group }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
     mode: 0775
     recurse: yes
 
 - name: webserver systemd service is installed
   template:
-    src: "systemd/letsencrypt-simplehttpd.service.j2"
-    dest: "/etc/systemd/system/letsencrypt-simplehttpd.service"
+    src: "systemd/acme-simplehttpd.service.j2"
+    dest: "/etc/systemd/system/acme-simplehttpd.service"
     owner: root
     group: root
     mode: 0755
@@ -127,15 +127,15 @@
 # # Ansible >= 2.2 only
 # - name: systemd daemons are reloaded after changing the service
 #   systemd:
-#     name: letsencrypt-simplehttpd
+#     name: acme-simplehttpd
 #     daemon_reload: yes
 #     enabled: false
 #   when: _systemd_service_template.changed
 
 - name: webserver upstart job is installed
   template:
-    src: "upstart/letsencrypt-simplehttpd.conf.j2"
-    dest: "/etc/init/letsencrypt-simplehttpd.conf"
+    src: "upstart/acme-simplehttpd.conf.j2"
+    dest: "/etc/init/acme-simplehttpd.conf"
     owner: root
     group: root
     mode: 0655
@@ -148,9 +148,9 @@
 
 - name: export directory exists
   file:
-    path: "{{ letsencrypt_export_dir }}"
+    path: "{{ acme_export_dir }}"
     state: directory
-    owner: "{{ letsencrypt_user }}"
+    owner: "{{ acme_user }}"
     group: "root"
     mode: 0775
     recurse: yes
@@ -162,13 +162,13 @@
 - name: simp_le client is installed
   git:
     repo: "https://github.com/kuba/simp_le.git"
-    dest: "{{ letsencrypt_home_dir }}/simp_le"
+    dest: "{{ acme_home_dir }}/simp_le"
     depth: 1
     clone: yes
     update: yes
     force: yes
   become: yes
-  become_user: "{{ letsencrypt_user }}"
+  become_user: "{{ acme_user }}"
 
 
 # virtualenv and python dependencies
@@ -176,7 +176,7 @@
 - name: Python modules are installed to virtualenv
   pip:
     name: "{{ item }}"
-    virtualenv: "{{ letsencrypt_virtualenv_dir }}"
+    virtualenv: "{{ acme_virtualenv_dir }}"
     virtualenv_site_packages: no
   with_items:
     - 'cryptography'
@@ -184,14 +184,14 @@
     - 'pytz'
     - 'requests'
   become: yes
-  become_user: "{{ letsencrypt_user }}"
+  become_user: "{{ acme_user }}"
 
 - name: ACME Python module 0.6 is installed
   pip:
     name: "acme"
     version: "0.6"
-    virtualenv: "{{ letsencrypt_virtualenv_dir }}"
+    virtualenv: "{{ acme_virtualenv_dir }}"
     virtualenv_site_packages: no
   become: yes
-  become_user: "{{ letsencrypt_user }}"
+  become_user: "{{ acme_user }}"
 

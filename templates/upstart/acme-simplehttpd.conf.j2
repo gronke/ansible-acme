@@ -1,0 +1,9 @@
+#!upstart
+description "Python SimpleHTTPServer for ACME challenge"
+
+start on filesystem and started networking
+stop on shutdown
+
+chdir "{{ acme_webroot_path }}"
+
+exec start-stop-daemon --start --make-pidfile --pidfile /var/run/acme-webserver.pid --exec /usr/bin/python2.7 -- -m SimpleHTTPServer 80
