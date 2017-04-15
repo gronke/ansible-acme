@@ -28,6 +28,7 @@ After generating a private key, a SSL certificate and a CSR (certificate signing
 ## Role Variables
 
 | Name | Required | Description |
+| ---- | -------- | ----------- |
 | acme_email | **yes** | This is the certificate admins email - make sure to set it to yours! |
 | acme_domain | **yes** | The domain name that is going to be signed |
 | acme_tos_sha256 | **yes** | SHA256 Hash of the LetsEncrypt Terms of Service |
