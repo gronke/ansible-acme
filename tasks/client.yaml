@@ -74,8 +74,11 @@
 - name: acme_home_dir is writable for acme_user
   file:
     path: "{{ acme_home_dir }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
     state: directory
     mode: 0770
+    recurse: yes
 
 
 # file system access
