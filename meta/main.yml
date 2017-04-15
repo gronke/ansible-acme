@@ -1,7 +1,7 @@
 ---
 galaxy_info:
-  author: Jason Robinson
-  description: A role to automate LetsEncrypt certificates.
+  author: Stefan Grönke
+  description: Generate and Sign Certificates with ACME Challenge (LetsEncrypt)
   license: MIT
   min_ansible_version: 2.0
   platforms:
