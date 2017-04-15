@@ -92,8 +92,7 @@
   with_items:
     - /var/lib/letsencrypt
     - /var/log/letsencrypt
-    - /etc/letsencrypt/live
-    - /etc/letsencrypt/accounts
+    - /etc/letsencrypt
 
 - name: letsencrypt account directory exists and is writable
   file:
@@ -182,6 +181,8 @@
     virtualenv: "{{ acme_virtualenv_dir }}"
     virtualenv_site_packages: no
   with_items:
+    - 'appdirs'
+    - 'pyparsing'
     - 'cryptography'
     - 'pyOpenSSL'
     - 'pytz'
