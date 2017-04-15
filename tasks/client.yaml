@@ -1,24 +1,201 @@
 ---
-- name: Operating system dependencies
-  apt: name={{ item }} state=present
+
+# dependencies
+
+- name: universe apt source is available on older versions of Ubuntu
+  command: apt-add-repository universe
+  when: (ansible_distribution == "Ubuntu") and ((ansible_distribution_major_version | int) <= 14)
+  register: _universe_sources_added
+  changed_when: not ("already enabled" in _universe_sources_added.stdout_lines[0])
+
+- name: apt-caches are updated after enabling universe
+  apt:
+    update_cache: yes
+  when: _universe_sources_added.changed
+
+- name: identify virtualenv apt package name
+  command: apt-cache search python-virtualenv
+  register: _apt_cache_search_virtualenv
+  when: ansible_pkg_mgr == "apt"
+
+- set_fact: _virtualenv_apt_package="{{ 'virtualenv' if (_apt_cache_search_virtualenv.stdout == '') else 'python-virtualenv' }}"
+  when: ansible_pkg_mgr == "apt"
+
+- name: Dependencies are installed with Aptitude
+  apt: 
+    name: "{{ item }}"
+    state: latest
   with_items:
-    - build-essential
-    - libssl-dev
-    - libffi-dev
-    - python-dev
-    - git
-    - python-pip
-    - python-virtualenv
-    - dialog
-    - libaugeas0
+      - gcc
+      - libssl-dev
+      - libffi-dev
+      - python
+      - python-dev
+      - python-pip
+      - ca-certificates
+      - git
+      - "{{ _virtualenv_apt_package }}"
+  when: ansible_pkg_mgr == "apt"
+
+- name: Dependencies are installed with Yum
+  yum: 
+    name: "{{ item }}"
+    state: latest
+  with_items:
     - ca-certificates
-- name: Python cryptography module
-  pip: name=cryptography
-- name: Letsencrypt Python client
+    - gcc
+    - libffi-devel
+    - openssl-devel
+    - python
+    - python-devel
+    - python-virtualenv
+    - git
+  when: ansible_pkg_mgr == "yum"
+
+
+# user and group configuration
+
+- name: acme_group exists
+  group:
+    name: "{{ acme_group }}"
+    system: yes
+    state: present
+
+- name: acme_user exists
+  user:
+    name: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    system: yes
+    home: "{{ acme_home_dir }}"
+    move_home: no
+    createhome: yes
+    append: yes
+
+- name: acme_home_dir is writable for acme_user
+  file:
+    path: "{{ acme_home_dir }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    state: directory
+    mode: 0770
+    recurse: yes
+
+
+# file system access
+
+- name: letsencrypt user is able to write to output directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    owner: "{{ acme_user }}"
+  with_items:
+    - /var/lib/letsencrypt
+    - /var/log/letsencrypt
+    - /etc/letsencrypt
+
+- name: letsencrypt account directory exists and is writable
+  file:
+    path: "{{ acme_account_file | dirname }}"
+    owner: root
+    group: "{{ acme_group }}"
+    mode: 0770
+    state: directory
+
+- name: acme_webroot_path exists and is writable by acme_user
+  file:
+    path: "{{ acme_webroot_path }}"
+    state: directory
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    mode: 0775
+    recurse: yes
+
+- name: webserver systemd service is installed
+  template:
+    src: "systemd/acme-simplehttpd.service.j2"
+    dest: "/etc/systemd/system/acme-simplehttpd.service"
+    owner: root
+    group: root
+    mode: 0755
+  register: _systemd_service_template
+  when: ansible_service_mgr == "systemd"
+
+# Ansible < 2.2 and >= 2.2
+- name: systemd daemons are reloaded via systemctl command
+  command: systemctl daemon-reload
+  when: (ansible_service_mgr == "systemd") and _systemd_service_template.changed
+
+# # Ansible >= 2.2 only
+# - name: systemd daemons are reloaded after changing the service
+#   systemd:
+#     name: acme-simplehttpd
+#     daemon_reload: yes
+#     enabled: false
+#   when: _systemd_service_template.changed
+
+- name: webserver upstart job is installed
+  template:
+    src: "upstart/acme-simplehttpd.conf.j2"
+    dest: "/etc/init/acme-simplehttpd.conf"
+    owner: root
+    group: root
+    mode: 0655
+  register: _upstart_service_template
+  when: ansible_service_mgr == "upstart"
+
+- name: upstart configuration is reloaded after job was changed
+  command: initctl reload-configuration
+  when: (ansible_service_mgr == "upstart") and _upstart_service_template.changed
+
+- name: export directory exists
+  file:
+    path: "{{ acme_export_dir }}"
+    state: directory
+    owner: "{{ acme_user }}"
+    group: "root"
+    mode: 0775
+    recurse: yes
+    force: yes
+
+
+# simp_le client
+
+- name: simp_le client is installed
   git:
-    dest: /opt/certbot
+    repo: "https://github.com/kuba/simp_le.git"
+    dest: "{{ acme_home_dir }}/simp_le"
+    depth: 1
     clone: yes
     update: yes
-    repo: https://github.com/certbot/certbot
     force: yes
-    version: '{{letsencrypt_certbot_version}}'
+  become: yes
+  become_user: "{{ acme_user }}"
+
+
+# virtualenv and python dependencies
+
+- name: Python modules are installed to virtualenv
+  pip:
+    name: "{{ item }}"
+    virtualenv: "{{ acme_virtualenv_dir }}"
+    virtualenv_site_packages: no
+  with_items:
+    - 'appdirs'
+    - 'pyparsing'
+    - 'cryptography'
+    - 'pyOpenSSL'
+    - 'pytz'
+    - 'requests'
+  become: yes
+  become_user: "{{ acme_user }}"
+
+- name: ACME Python module 0.6 is installed
+  pip:
+    name: "acme"
+    version: "0.6"
+    virtualenv: "{{ acme_virtualenv_dir }}"
+    virtualenv_site_packages: no
+  become: yes
+  become_user: "{{ acme_user }}"
+

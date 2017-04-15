@@ -1,39 +1,75 @@
 ---
-- set_fact: _letsencrypt_certbot_args="{{ letsencrypt_certbot_args + ['--renew-by-default'] }}"
-  when: letsencrypt_force_renew
 
-- set_fact: _letsencrypt_certbot_args="{{ letsencrypt_certbot_args + ['--keep-until-expiring'] }}"
-  when: not letsencrypt_force_renew
+- set_fact: _acme_domains="{{ [acme_domain] }}"
+- set_fact: _acme_domains="{{ _acme_domains + [{{ 'www.' + acme_domain }}] }}"
+  when: acme_request_www
 
-- set_fact: _letsencrypt_domains="--domains {{letsencrypt_domain}},www.{{letsencrypt_domain}}"
-  when: letsencrypt_request_www
-
-- set_fact: _letsencrypt_domains="--domains {{letsencrypt_domain}}"
-  when: not letsencrypt_request_www
-
-- set_fact: _letsencrypt_certbot_combined_args="{{_letsencrypt_certbot_args + letsencrypt_certbot_default_args + letsencrypt_certbot_args + [_letsencrypt_domains] }}"
+- set_fact: _acme_combined_args="{{ acme_default_args + ['-d ' + (_acme_domains | join(' -d '))] + acme_args }}"
 
 - name: Stopping Services
   service: name="{{item}}" state=stopped
-  with_items: "{{ letsencrypt_pause_services }}"
+  with_items: "{{ acme_pause_services }}"
   ignore_errors: yes
   register: _services_stopped
 
-- name: Obtain or renew cert for domain
-  shell: ./certbot-auto {{_letsencrypt_certbot_combined_args | join(' ')}} 2>&1
-  args:
-    chdir: /opt/certbot
-    executable: /bin/bash
-  ignore_errors: true
-  register: _certbot_command
-  when: not letsencrypt_test
+- name: Start SimpleHTTPServer for ACME Challenges
+  service:
+    name: acme-simplehttpd
+    state: started
 
-- set_fact: _signing_successful='{{ certbot_success_message in _certbot_command.stdout }}'
-  when: not letsencrypt_test
-- set_fact: _signing_skipped='{{ (certbot_skip_renewal_message in _certbot_command.stdout) and not letsencrypt_force_renew }}'
-  when: not letsencrypt_test
-- debug: msg="{{ (_certbot_command.stdout_lines if _certbot_command.stdout_lines is defined else _certbot_command.stderr_lines) | pprint }}"
-  when: not letsencrypt_test and (letsencrypt_certbot_verbose or ((not _signing_successful) and not _signing_skipped))
+- name: fullchain.pem, cert.pem and chain.pem are linked
+  file:
+    src: "{{ acme_export_dir }}/{{ item }}"
+    dest: "{{ acme_home_dir }}/simp_le/{{ item }}"
+    state: link
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    force: yes
+  with_items:
+    - "fullchain.pem"
+    - "cert.pem"
+    - "chain.pem"
+
+- name: privkey.pem is linked
+  file:
+    src: "{{ acme_export_dir }}/privkey.pem"
+    dest: "{{ acme_home_dir }}/simp_le/key.pem"
+    state: link
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    force: yes
+
+- name: LetsEncrypt account key is linked
+  file:
+    src: "{{ acme_account_file }}"
+    dest: "{{ acme_home_dir }}/simp_le/account_key.json"
+    state: link
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    force: yes
+
+- name: Obtain or renew cert for domain
+  shell: PATH="{{ acme_virtualenv_dir }}/bin" "{{ acme_virtualenv_dir }}/bin/python" ./simp_le.py {{_acme_combined_args | join(' ')}} 2>&1
+  args:
+    chdir: "{{ acme_home_dir }}/simp_le"
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ acme_user }}"
+  ignore_errors: true
+  register: _acme_client_command
+  when: not acme_test
+
+- set_fact: _signing_successful='{{ client_success_message in _acme_client_command.stdout }}'
+  when: not acme_test
+- set_fact: _signing_skipped='{{ (client_skip_renewal_message in _acme_client_command.stdout) and not acme_force_renew }}'
+  when: not acme_test
+- debug: msg="{{ (_acme_client_command.stdout_lines if _acme_client_command.stdout_lines is defined else _acme_client_command.stderr_lines) | pprint }}"
+  when: not acme_test and (acme_verbose or not (_signing_successful and _signing_skipped))
+
+- name: Stop SimpleHTTPServer after running certbot
+  service:
+    name: acme-simplehttpd
+    state: stopped
 
 - name: Starting paused Services
   service: name="{{item.item}}" state=started
@@ -41,4 +77,4 @@
   with_items: "{{ _services_stopped.results|default([]) }}"
 
 - fail: msg="Error signing the certificate"
-  when: not letsencrypt_test and not _signing_successful and not _signing_skipped
+  when: not acme_test and not _signing_successful and not _signing_skipped

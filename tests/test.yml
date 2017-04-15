@@ -2,12 +2,12 @@
 - hosts: all
 
   vars:
-    letsencrypt_email: user@example.com
-    letsencrypt_domain: example.com
-    letsencrypt_pause_services:
+    acme_email: user@example.com
+    acme_domain: example.com
+    acme_pause_services:
       - apache2
-    letsencrypt_test: true
-    letsencrypt_test_expected_args:
+    acme_test: true
+    acme_test_expected_args:
       - --renew-by-default
       - certonly
       - --standalone
