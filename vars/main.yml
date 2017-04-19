@@ -2,5 +2,5 @@
 # vars file for letsencrypt
 
 client_skip_renewal_message: "Certificates already exist and renewal is not necessary, exiting with status code"
-client_success_message: "Congratulations!"
+client_success_message: "was successfully self-verified"
 client_test_success_message: "letsencrypt: error: unrecognized arguments: invalid-test-arg"
