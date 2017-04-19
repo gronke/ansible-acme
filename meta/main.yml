@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: Stefan Grönke
-  description: Generate and Sign Certificates with ACME Challenge (LetsEncrypt)
+  description: Generate and Sign Certificates with ACME Challenge (e.g. LetsEncrypt)
   license: MIT
   min_ansible_version: 2.0
   platforms:
@@ -15,10 +15,6 @@ galaxy_info:
   - name: Debian
     versions:
     - jessie
-    - wheezy
-  - name: CentOS
-    versions:
-      - 7.2
   categories:
     - cloud
     - web
