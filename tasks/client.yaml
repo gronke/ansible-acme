@@ -22,7 +22,7 @@
   when: ansible_pkg_mgr == "apt"
 
 - name: Dependencies are installed with Aptitude
-  apt: 
+  apt:
     name: "{{ item }}"
     state: latest
   with_items:
@@ -38,7 +38,7 @@
   when: ansible_pkg_mgr == "apt"
 
 - name: Dependencies are installed with Yum
-  yum: 
+  yum:
     name: "{{ item }}"
     state: latest
   with_items:
@@ -52,6 +52,13 @@
     - git
   when: ansible_pkg_mgr == "yum"
 
+- name: Dependencies are installed on FreeBSD with PKG
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - py27-virtualenv
+  when: ansible_pkg_mgr == "pkgng"
 
 # user and group configuration
 
