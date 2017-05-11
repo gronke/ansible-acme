@@ -1,5 +1,12 @@
 ---
 
+- name: OS dependend variables are loaded
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+    - "default.yml
+
 - fail: msg="Certbot was replaced by simple_le client. Please update your flags provided as `acme_certbot_args` to `acme_args`"
   when: acme_certbot_args is defined
 
