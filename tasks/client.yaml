@@ -121,8 +121,8 @@
 
 - name: webserver systemd service is installed
   template:
-    src: "systemd/acme-simplehttpd.service.j2"
-    dest: "/etc/systemd/system/acme-simplehttpd.service"
+    src: "systemd/acmesimplehttpd.service.j2"
+    dest: "/etc/systemd/system/acmesimplehttpd.service"
     owner: root
     group: root
     mode: 0755
@@ -137,15 +137,15 @@
 # # Ansible >= 2.2 only
 # - name: systemd daemons are reloaded after changing the service
 #   systemd:
-#     name: acme-simplehttpd
+#     name: acmesimplehttpd
 #     daemon_reload: yes
 #     enabled: false
 #   when: _systemd_service_template.changed
 
 - name: webserver upstart job is installed
   template:
-    src: "upstart/acme-simplehttpd.conf.j2"
-    dest: "/etc/init/acme-simplehttpd.conf"
+    src: "upstart/acmesimplehttpd.conf.j2"
+    dest: "/etc/init/acmesimplehttpd.conf"
     owner: root
     group: root
     mode: 0655
