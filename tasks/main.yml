@@ -29,16 +29,15 @@
 - debug: msg="Domain is not expiring within {{ acme_expiration_threshold }} seconds. We're done here."
   when: not _domain_expiring
 
-- meta: end_play
-  when: not _domain_expiring
-
 # Setup
 
 - include: client.yaml
+  when: _domain_expiring
 
 # Create Certificates
 
 - include: cert.yaml
+  when: _domain_expiring
 
 # Run Tests
 
