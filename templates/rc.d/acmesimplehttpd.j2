@@ -10,15 +10,15 @@ work_dir="{{ acme_webroot_path }}"
 
 if [ -f /usr/local/bin/python3.6 ]; then
   command="/usr/local/bin/python3.6" 
-  command_args="-m http.server 8088"
+  command_args="-m http.server 80"
 else
   command="/usr/local/bin/python2.7" 
-  command_args="-m SimpleHTTPServer 8088"
+  command_args="-m SimpleHTTPServer 80"
 fi
 
 acme_simplehttpd_start()
 { 
-  cd /tmp/foo
+  cd "{{ acme_webroot_path }}"
   /usr/sbin/daemon -f -p ${pidfile} -u root $command $command_args
 }
 

@@ -4,7 +4,88 @@
 - set_fact: _acme_domains="{{ _acme_domains + ['www.' + acme_domain] }}"
   when: acme_request_www
 
-- set_fact: _acme_combined_args="{{ acme_default_args + ['-d ' + (_acme_domains | join(' -d '))] + acme_args }}"
+# Account
+
+- name: Account Key exists
+  command: openssl genrsa -out "{{ acme_account_file }}" 4096
+  args:
+    creates: "{{ acme_account_file }}"
+
+- name: Account Key permissions are corrent
+  file:
+    path: "{{ acme_account_file }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    mode: "0600" # acme_group must not be allowed to read this
+
+# Private Key
+
+- name: Private Key exists
+  command: openssl genrsa -out "{{ _acme_domain_key_path }}" 4096
+  args:
+    creates: "{{ _acme_domain_key_path }}"
+
+- name: Account Key permissions are corrent
+  file:
+    path: "{{ _acme_domain_key_path }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    mode: "0640"
+
+# Single Domain
+
+- name: Certificate Signing Request exists
+  command: openssl req -new -sha256 -key "{{ _acme_domain_key_path }}" -subj "/CN={{ _acme_domains[0] }}" -out "{{ _acme_domain_csr_path }}"
+  args:
+    creates: "{{ _acme_domain_csr_path }}"
+  when: (_acme_domains | length) == 1
+
+- name: Domain specific OpenSSL configuration is absent
+  file:
+    path: "{{ acme_export_dir }}/openssl.cnf"
+    state: absent
+  when: (_acme_domains | length) == 1
+
+# Multi Domains
+
+- name: OpenSSL configuration for multi-domain certificates was copied
+  command: cp /etc/ssl/openssl.cnf "{{ acme_export_dir }}/openssl.cnf"
+  args:
+    creates: "{{ acme_export_dir }}/openssl.cnf"
+  when: (_acme_domains | length) > 1
+
+- name: Domain specific OpenSSL configuration contains [SAN] topic
+  lineinfile:
+    path: "{{ acme_export_dir }}/openssl.cnf"
+    state: present
+    line: "[SAN]"
+    insertafter: EOF
+  when: (_acme_domains | length) > 1
+
+- name: domain specific OpenSSL configuration contains altnames
+  lineinfile:
+    path: "{{ acme_export_dir }}/openssl.cnf"
+    insertafter: "^\\[SAN\\]"
+    line: "subjectAltName=DNS:{{ _acme_domains | join(',DNS:') }}"
+    regexp: "^subjectAltName="
+  when: (_acme_domains | length) > 1
+
+- name: Certificate Signing Request exists
+  command: openssl req -new -sha256 -key "{{ _acme_domain_key_path }}" -subj "/" -reqexts SAN -config "{{ acme_export_dir }}/openssl.cnf" -out "{{ _acme_domain_csr_path }}"
+  args:
+    creates: "{{ _acme_domain_csr_path }}"
+  when: (_acme_domains | length) > 1
+
+# Single and Multi Domains
+
+- name: CSR permissions are corrent
+  file:
+    path: "{{ _acme_domain_csr_path }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    mode: "0640"
+
+# Pre-Challenge
 
 - name: Stopping Services
   service: name="{{item}}" state=stopped
@@ -17,56 +98,40 @@
     name: acmesimplehttpd
     state: started
 
-- name: fullchain.pem, cert.pem and chain.pem are linked
-  file:
-    src: "{{ acme_export_dir }}/{{ item }}"
-    dest: "{{ acme_home_dir }}/simp_le/{{ item }}"
-    state: link
-    owner: "{{ acme_user }}"
-    group: "{{ acme_group }}"
-    force: yes
-  with_items:
-    - "fullchain.pem"
-    - "cert.pem"
-    - "chain.pem"
+# Challenge
 
-- name: privkey.pem is linked
-  file:
-    src: "{{ acme_export_dir }}/privkey.pem"
-    dest: "{{ acme_home_dir }}/simp_le/key.pem"
-    state: link
-    owner: "{{ acme_user }}"
-    group: "{{ acme_group }}"
-    force: yes
+- set_fact: _acme_combined_args="{{ acme_default_args + ['--csr ' + _acme_domain_csr_path] + acme_args }}"
 
-- name: LetsEncrypt account key is linked
-  file:
-    src: "{{ acme_account_file }}"
-    dest: "{{ acme_home_dir }}/simp_le/account_key.json"
-    state: link
-    owner: "{{ acme_user }}"
-    group: "{{ acme_group }}"
-    force: yes
-
-- name: Obtain or renew cert for domain
-  shell: PATH="{{ acme_virtualenv_dir }}/bin" "{{ acme_virtualenv_dir }}/bin/python" ./simp_le.py {{_acme_combined_args | join(' ')}} 2>&1
+- name: Sign the Certificate
+  shell: "{{ ansible_python_interpreter }} {{ acme_command }} {{ _acme_combined_args | join(' ') }} > \"{{ _acme_domain_cert_path }}\""
   args:
-    chdir: "{{ acme_home_dir }}/simp_le"
-    executable: /bin/sh
+    chdir: "{{ acme_export_dir }}"
   become: yes
   become_user: "{{ acme_user }}"
   ignore_errors: true
   register: _acme_client_command
   when: not acme_test
 
-- set_fact: _signing_successful='{{ client_success_message in _acme_client_command.stdout }}'
-  when: not acme_test
-- set_fact: _signing_skipped='{{ (client_skip_renewal_message in _acme_client_command.stdout) and not acme_force_renew }}'
-  when: not acme_test
-- debug: msg="{{ (_acme_client_command.stdout_lines if _acme_client_command.stdout_lines is defined else _acme_client_command.stderr_lines) | pprint }}"
-  when: not acme_test and (acme_verbose or not (_signing_successful and _signing_skipped))
+- name: cert.pem permissions are correct
+  file:
+    path: "{{ _acme_domain_cert_path }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    mode: "0644"
 
-- name: Stop SimpleHTTPServer after running certbot
+- name: fullchain.pem is created
+  shell: cat "{{ _acme_domain_cert_path }}" "{{ _acme_intermediate_certificate_path }}" > "{{ _acme_domain_fullchain_path }}"
+
+- name: fullchain.pem permissions are correct
+  file:
+    path: "{{ _acme_domain_fullchain_path }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    mode: "0644"
+
+# Post-Challenge
+
+- name: Stop SimpleHTTPServer after responding to the challenge
   service:
     name: acmesimplehttpd
     state: stopped
@@ -76,5 +141,10 @@
   when: (item.state is defined and item.state == "stopped")
   with_items: "{{ _services_stopped.results|default([]) }}"
 
+# Error Handling
+
+- set_fact: _signing_successful='{{ _acme_client_command.rc == 0 }}'
+  when: not acme_test
+
 - fail: msg="Error signing the certificate"
-  when: not acme_test and not _signing_successful and not _signing_skipped
+  when: not acme_test and not _signing_successful

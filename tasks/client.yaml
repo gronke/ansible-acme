@@ -13,29 +13,14 @@
     update_cache: yes
   when: _universe_sources_added.changed
 
-- name: identify virtualenv apt package name
-  command: apt-cache search python-virtualenv
-  register: _apt_cache_search_virtualenv
-  when: ansible_pkg_mgr == "apt"
-
-- set_fact: _virtualenv_apt_package="{{ 'virtualenv' if (_apt_cache_search_virtualenv.stdout == '') else 'python-virtualenv' }}"
-  when: ansible_pkg_mgr == "apt"
-
 - name: Dependencies are installed with Aptitude
   apt:
     name: "{{ item }}"
     state: latest
   with_items:
-      - gcc
-      - libssl-dev
-      - libffi-dev
-      - python
-      - python-dev
-      - python-pip
       - ca-certificates
       - git
       - sudo
-      - "{{ _virtualenv_apt_package }}"
   when: ansible_pkg_mgr == "apt"
 
 - name: Dependencies are installed with Yum
@@ -44,12 +29,6 @@
     state: latest
   with_items:
     - ca-certificates
-    - gcc
-    - libffi-devel
-    - openssl-devel
-    - python
-    - python-devel
-    - python-virtualenv
     - git
     - sudo
   when: ansible_pkg_mgr == "yum"
@@ -59,7 +38,6 @@
     name: "{{ item }}"
     state: present
   with_items:
-    - py27-virtualenv
     - git-lite
     - sudo
   when: ansible_pkg_mgr == "pkgng"
@@ -91,7 +69,6 @@
     mode: 0770
     recurse: yes
 
-
 # file system access
 
 - name: letsencrypt user is able to write to output directories
@@ -116,7 +93,7 @@
 
 - name: acme_webroot_path exists and is writable by acme_user
   file:
-    path: "{{ acme_webroot_path }}"
+    path: "{{ acme_webroot_path }}/.well-known/acme-challenge"
     state: directory
     owner: "{{ acme_user }}"
     group: "{{ acme_group }}"
@@ -180,13 +157,12 @@
     recurse: yes
     force: yes
 
+# acme-tiny client
 
-# simp_le client
-
-- name: simp_le client is installed
+- name: acme-tiny client is installed
   git:
-    repo: "https://github.com/kuba/simp_le.git"
-    dest: "{{ acme_home_dir }}/simp_le"
+    repo: "https://github.com/diafygi/acme-tiny.git"
+    dest: "{{ acme_home_dir }}/acme-tiny"
     depth: 1
     clone: yes
     update: yes
@@ -194,30 +170,20 @@
   become: yes
   become_user: "{{ acme_user }}"
 
+- name: acme-tiny client is executable
+  file:
+    path: "{{ acme_command }}"
+    mode: "u+x"
 
-# virtualenv and python dependencies
+# intermediate certificate
 
-- name: Python modules are installed to virtualenv
-  pip:
-    name: "{{ item }}"
-    virtualenv: "{{ acme_virtualenv_dir }}"
-    virtualenv_site_packages: no
-  with_items:
-    - 'appdirs'
-    - 'pyparsing'
-    - 'cryptography'
-    - 'pyOpenSSL'
-    - 'pytz'
-    - 'requests'
+- name: Intermediate Certificate is downloaded
+  get_url:
+    url: "{{ acme_intermediate_certificate }}"
+    dest: "{{ _acme_intermediate_certificate_path }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    mode: "0644"
+    force: yes
   become: yes
   become_user: "{{ acme_user }}"
-
-- name: ACME Python module 0.6 is installed
-  pip:
-    name: "acme"
-    version: "0.6"
-    virtualenv: "{{ acme_virtualenv_dir }}"
-    virtualenv_site_packages: no
-  become: yes
-  become_user: "{{ acme_user }}"
-

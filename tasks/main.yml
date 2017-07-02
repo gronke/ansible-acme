@@ -8,11 +8,39 @@
     - "default.yml"
 
 - fail:
+    msg: "acme_tos_sha256 is required. Please provide the SHA256 hash of the latest ToS PDF file (e.g. https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf)"
+  when: acme_tos_sha256 is not defined
+
+- fail:
     msg: "Certbot was replaced by simple_le client. Please update your flags provided as `acme_certbot_args` to `acme_args`"
   when: acme_certbot_args is defined
 
+# Fast exit chen certificate is not expiring.
+# This is a little dangerous, because the altnames 
+# of a certificate could have been changed
+
+- name: check if certificate is expiring
+  command: openssl x509 -checkend "{{ acme_expiration_threshold }}" -noout -in "{{ _acme_domain_cert_path }}"
+  register: _acme_certificate_expiring_check
+  ignore_errors: true
+
+- set_fact: _domain_expiring="{{ _acme_certificate_expiring_check.rc == 1 }}"
+
+- debug: msg="Domain is not expiring within {{ acme_expiration_threshold }} seconds. We're done here."
+  when: not _domain_expiring
+
+- meta: end_play
+  when: not _domain_expiring
+
+# Setup
+
 - include: client.yaml
+
+# Create Certificates
+
 - include: cert.yaml
+
+# Run Tests
 
 - include: test.yaml
   when: acme_test
