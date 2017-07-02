@@ -33,7 +33,7 @@
     - sudo
   when: ansible_pkg_mgr == "yum"
 
-- name: Dependencies are installed on FreeBSD with PKG
+- name: Dependencies are installed on FreeBSD with pkg
   pkgng:
     name: "{{ item }}"
     state: present
