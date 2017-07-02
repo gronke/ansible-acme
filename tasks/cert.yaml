@@ -52,7 +52,7 @@
   shell: PATH="{{ acme_virtualenv_dir }}/bin" "{{ acme_virtualenv_dir }}/bin/python" ./simp_le.py {{_acme_combined_args | join(' ')}} 2>&1
   args:
     chdir: "{{ acme_home_dir }}/simp_le"
-    executable: /bin/bash
+    executable: /bin/sh
   become: yes
   become_user: "{{ acme_user }}"
   ignore_errors: true
