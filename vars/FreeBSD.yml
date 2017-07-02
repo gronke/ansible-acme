@@ -1,3 +1,4 @@
 ---
 
+_os_root_group: wheel
 _acme_etc_directory: /usr/local/etc

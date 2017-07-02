@@ -1,0 +1,4 @@
+---
+
+_os_root_group: root
+_acme_etc_directory: /etc/letsencrypt

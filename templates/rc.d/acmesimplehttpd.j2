@@ -1,0 +1,28 @@
+#!/bin/sh
+
+. /etc/rc.subr
+
+name=acme_simplehttpd
+rcvar=acme_simplehttpd
+pidfile="/var/run/${name}.pid"
+command_interpreter="."
+work_dir="{{ acme_webroot_path }}"
+
+if [ -f /usr/local/bin/python3.6 ]; then
+  command="/usr/local/bin/python3.6" 
+  command_args="-m http.server 8088"
+else
+  command="/usr/local/bin/python2.7" 
+  command_args="-m SimpleHTTPServer 8088"
+fi
+
+acme_simplehttpd_start()
+{ 
+  cd /tmp/foo
+  /usr/sbin/daemon -f -p ${pidfile} -u root $command $command_args
+}
+
+start_cmd=acme_simplehttpd_start
+
+load_rc_config $name
+run_rc_command "$1"
