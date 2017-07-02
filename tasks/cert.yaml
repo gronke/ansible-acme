@@ -1,7 +1,7 @@
 ---
 
 - set_fact: _acme_domains="{{ [acme_domain] }}"
-- set_fact: _acme_domains="{{ _acme_domains + [{{ 'www.' + acme_domain }}] }}"
+- set_fact: _acme_domains="{{ _acme_domains + ['www.' + acme_domain] }}"
   when: acme_request_www
 
 - set_fact: _acme_combined_args="{{ acme_default_args + ['-d ' + (_acme_domains | join(' -d '))] + acme_args }}"
