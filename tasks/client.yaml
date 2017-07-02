@@ -67,7 +67,6 @@
     group: "{{ acme_group }}"
     state: directory
     mode: 0770
-    recurse: yes
 
 # file system access
 
@@ -93,11 +92,18 @@
 
 - name: acme_webroot_path exists and is writable by acme_user
   file:
-    path: "{{ acme_webroot_path }}/.well-known/acme-challenge"
+    path: "{{ acme_webroot_path }}"
     state: directory
     owner: "{{ acme_user }}"
     group: "{{ acme_group }}"
-    mode: 0775
+    mode: 0770
+    recurse: yes
+
+- name: acme_webroot_path is readable for others (e.g. a webserver)
+  file:
+    path: "{{ acme_webroot_path }}"
+    state: directory
+    mode: "o+rx"
     recurse: yes
 
 - name: webserver systemd service is installed

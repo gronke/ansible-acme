@@ -40,7 +40,7 @@ acme_args: []
 # default arguments passed to acme-tiny
 acme_default_args:
   - --account-key "{{ acme_account_file }}"
-  - --acme-dir "{{ acme_webroot_path }}/.well-known/acme-challenge"
+  - --acme-dir "{{ acme_webroot_path }}"
 # intermediate certificate url
 acme_intermediate_certificate: "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
 # certificate locations
