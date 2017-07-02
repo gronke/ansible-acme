@@ -13,6 +13,8 @@ acme_request_www: true
 acme_verbose: true
 # Pause these services while updating the certificate
 acme_pause_services: []
+# Use Python SimpleHTTPServer to host challenge response
+acme_use_own_http_server: "{{ (acme_pause_services | length) > 0}}"
 # This is enabled when running tests - DO NOT TOUCH
 acme_test: false
 # Force Certificate Reneval

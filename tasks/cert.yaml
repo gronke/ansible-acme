@@ -92,11 +92,13 @@
   with_items: "{{ acme_pause_services }}"
   ignore_errors: yes
   register: _services_stopped
+  when: acme_use_own_http_server
 
 - name: Start SimpleHTTPServer for ACME Challenges
   service:
     name: acmesimplehttpd
     state: started
+  when: acme_use_own_http_server
 
 # Challenge
 
@@ -135,11 +137,13 @@
   service:
     name: acmesimplehttpd
     state: stopped
+  when: acme_use_own_http_server
 
 - name: Starting paused Services
   service: name="{{item.item}}" state=started
   when: (item.state is defined and item.state == "stopped")
   with_items: "{{ _services_stopped.results|default([]) }}"
+  when: acme_use_own_http_server
 
 # Error Handling
 
