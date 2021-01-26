@@ -105,7 +105,7 @@
 - set_fact: _acme_combined_args="{{ acme_default_args + ['--csr ' + _acme_domain_csr_path] + acme_args }}"
 
 - name: Sign the Certificate
-  shell: "{{ ansible_python_interpreter }} {{ acme_command }} {{ _acme_combined_args | join(' ') }} > \"{{ _acme_domain_cert_path }}\""
+  shell: "{{ ansible_python_interpreter | default('/usr/bin/python3') }} {{ acme_command }} {{ _acme_combined_args | join(' ') }} > \"{{ _acme_domain_cert_path }}\""
   args:
     chdir: "{{ acme_export_dir }}"
   become: yes
