@@ -98,13 +98,23 @@
     group: "{{ acme_group }}"
     mode: 0770
     recurse: yes
+    follow: no
 
 - name: acme_webroot_path is readable for others (e.g. a webserver)
   file:
-    path: "{{ acme_webroot_path }}"
+    path: "{{ acme_webroot_path }}/.well-known"
     state: directory
     mode: "o+rx"
     recurse: yes
+    follow: no
+
+- name: .well-known/acme-challenge symlink exists
+  file:
+    src: "{{ acme_webroot_path }}"
+    dest: "{{ acme_webroot_path }}/.well-known/acme-challenge"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_group }}"
+    state: "link"
 
 - name: webserver systemd service is installed
   template:
@@ -162,6 +172,7 @@
     mode: 0775
     recurse: yes
     force: yes
+    follow: no
 
 # acme-tiny client
 
